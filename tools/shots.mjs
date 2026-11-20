@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 
@@ -8,7 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || '/workspace/pwtool/n
 const url = new URL(process.env.SHOTS_URL || 'http://127.0.0.1:5815/')
 url.searchParams.set('capture', '')
 const out = process.env.SHOTS_DIR || '/workspace/codex-beauty-shots'
-const prefix = process.env.SHOTS_PREFIX || 'r2-'
+const prefix = process.env.SHOTS_PREFIX || 'r3-'
 const flags = ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
 const browser = await chromium.launch({ headless: true, args: flags })
 const errors = []
@@ -33,7 +33,8 @@ async function openPage(viewport, reducedMotion = 'no-preference') {
       ...['angry', 'surprised', 'blink', 'smile', 'sad'].map(mood => `${actor}-eyes-${mood}`),
       ...['smile', 'sad'].map(mood => `${actor}-mouth-${mood}`),
     ])
-    await Promise.all(['ink', 'ivory', 'wine', 'blush', 'nocturne', 'jade', 'roof', 'night', 'male-eyes-partner', ...face].map(async name => {
+    const stage = ['roof', 'night', 'rooftop-reverse', 'train-ticket']
+    await Promise.all(['ink', 'ivory', 'wine', 'blush', 'nocturne', 'jade', ...stage, 'male-eyes-partner', ...face].map(async name => {
       const image = new Image()
       image.src = new URL(`art/${name}.webp`, location.href)
       await image.decode()
@@ -66,40 +67,18 @@ async function seekTo(page, seconds) {
   }, seconds)
 }
 
-async function measureFps(page) {
-  return page.evaluate(() => new Promise(resolve => {
-    let frames = 0
-    let start
-    let last
-    const deltas = []
-    function step(now) {
-      start ??= now
-      if (last !== undefined) deltas.push(now - last)
-      last = now
-      if (now - start >= 5000) {
-        const sorted = deltas.toSorted((a, b) => a - b)
-        resolve({
-          frames,
-          milliseconds: Math.round(now - start),
-          fps: Number((1000 * frames / (now - start)).toFixed(1)),
-          p95Ms: Number(sorted[Math.floor(sorted.length * .95)].toFixed(1)),
-        })
-      } else {
-        frames++
-        requestAnimationFrame(step)
-      }
-    }
-    requestAnimationFrame(step)
-  }))
-}
+const measureFps = page => page.evaluate(() => window.__manhua.measureFps())
 
 try {
   const page = await openPage({ width: 1440, height: 960 })
   await page.evaluate(() => window.__manhua.freeze(.65))
-  assert.equal(await page.locator('[data-actor="male"] .eye-partner').getAttribute('opacity'), '1')
+  assert.equal(await page.locator('#stage').getAttribute('data-cutaway'), 'closing')
   await page.locator('.costume-sample').evaluateAll(images => Promise.all(images.map(image => image.decode())))
   await shot(page, 'panel', false)
   await shot(page, 'two-shot')
+  await seekTo(page, .76)
+  assert.equal(await page.locator('[data-actor="male"] .eye-partner').getAttribute('opacity'), '1')
+  await shot(page, 'two-shot-live')
 
   for (const [actor, outfits] of Object.entries(wardrobes)) {
     await select(page, 'actor', actor)
@@ -158,7 +137,7 @@ try {
   for (const [i, seconds] of timestamps.entries()) {
     await seekTo(page, seconds)
     visemes.add(await opening.getAttribute('d'))
-    assert.match(await page.locator('#subtitle-zh').innerText(), /你说等风/)
+    assert.equal(await page.locator('#subtitle-zh').innerText(), i < 4 ? '你说等风，' : '是在等我吗？')
     await shot(page, `line-01-frame-${String(i + 1).padStart(2, '0')}`)
   }
   assert.ok(visemes.size >= 6, `Expected 6 distinct mouth shapes, got ${visemes.size}`)
@@ -170,8 +149,10 @@ try {
   assert.equal(await page.locator('#subtitles').isVisible(), true)
   assert.equal(await page.locator('#play').evaluate(button => button === document.activeElement), true)
 
-  await seekTo(page, (await page.evaluate(() => window.__manhua.timing.lines[1].start)) + 1.17)
+  await seekTo(page, (await page.evaluate(() => window.__manhua.timing.lines[1].start)) + 2.13)
   assert.match(await page.locator('#subtitle-zh').innerText(), /你怎么才来/)
+  assert.equal(await page.locator('#stage').getAttribute('data-camera'), 'reverse')
+  assert.equal(await page.locator('[data-actor="male"]').getAttribute('data-framing'), 'foreground')
   await shot(page, 'scene-what-took-you-so-long')
 
   await page.locator('[data-view="script"]').click()
@@ -186,9 +167,18 @@ try {
 
   await page.locator('#sound').click()
   assert.equal(await page.evaluate(() => window.__manhua.media.muted), true)
-  await seekTo(page, (await page.evaluate(() => window.__manhua.timing.lines[4].start)) + 1.74)
+  await seekTo(page, (await page.evaluate(() => window.__manhua.timing.lines[2].start)) + 3.32)
+  assert.equal(await page.locator('#subtitle-zh').innerText(), '只剩一句想见你。')
+  assert.equal(await page.locator('[data-actor="female"]').getAttribute('data-framing'), 'foreground')
+  await shot(page, 'scene-the-confession')
+  await seekTo(page, (await page.evaluate(() => window.__manhua.timing.lines[4].start)) + 2.72)
   assert.match(await page.locator('#subtitle-zh').innerText(), /同一班的车票/)
+  assert.equal(await page.locator('#stage').getAttribute('data-cutaway'), 'ticket')
   await shot(page, 'scene-the-train-ticket')
+  await page.evaluate(() => window.__manhua.seek(22.2))
+  assert.equal(await page.locator('#stage').getAttribute('data-cutaway'), 'closing')
+  assert.equal(await page.locator('#subtitles').isVisible(), false)
+  await shot(page, 'scene-closing-look')
   await page.locator('[data-view="studio"]').click()
   await page.evaluate(() => window.__manhua.freeze(undefined))
   await page.locator('#restart').click()
@@ -207,15 +197,30 @@ try {
   await page.waitForFunction(() => window.__manhua.media.started)
   const rainFps = await measureFps(page)
   await page.locator('#play').click()
+  await page.evaluate(() => window.__manhua.seek(22.2))
+  assert.equal(await page.locator('#stage').getAttribute('data-cutaway'), '')
 
   const mobile = await openPage({ width: 390, height: 844 }, 'reduce')
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth), 390)
   await shot(mobile, 'mobile', false)
+  await mobile.evaluate(() => window.__manhua.seek(2.01))
+  assert.equal(await mobile.locator('#subtitle-zh').innerText(), '是在等我吗？')
+  await shot(mobile, 'mobile-dialogue')
   await select(mobile, 'actor', 'female')
   await select(mobile, 'outfit', 'jade')
   assert.equal(await mobile.locator('[data-actor="female"]').getAttribute('data-outfit'), 'jade')
+  await mobile.evaluate(() => window.__manhua.seek(22.2))
+  assert.equal(await mobile.locator('#stage').getAttribute('data-cutaway'), '')
+  assert.equal(await mobile.evaluate(() => window.__manhua.choose('outfit', 'blush')), true)
+  assert.equal(await mobile.evaluate(() => window.__manhua.choose('outfit', 'ink')), false)
+  await mobile.evaluate(() => window.__manhua.seek(22.2))
+  assert.equal(await mobile.locator('#stage').getAttribute('data-cutaway'), 'closing')
 
   assert.deepEqual(errors, [])
+  if (prefix === 'r3-') {
+    const best = ['panel', 'two-shot', 'close-male', 'close-female', 'rain-street', 'expression-female-sad', 'scene-the-train-ticket']
+    await Promise.all(best.map(label => copyFile(path.join(out, `${prefix}${label}.png`), path.join(out, `best-${label}.png`))))
+  }
   console.log(JSON.stringify({ viewport: '1440×960', renderer: 'Chromium with SwiftShader flags (software GL)', rooftopFps, rainFps, distinctMouthShapes: visemes.size }, null, 2))
 } finally {
   await browser.close()

@@ -2,7 +2,7 @@ import './style.css'
 import { icon } from './icons.js'
 import { makeParticles } from './particles.js'
 import { makeActor } from './rig.js'
-import { cast, expressions, shots, backdrops, gestures, beats, acting } from './scenes.js'
+import { cast, expressions, shots, backdrops, gestures, beats, acting, cutaways } from './scenes.js'
 import timing from './voice-timing.json'
 import { prepareSpeech, sampleVoice, silent } from './speech.js'
 
@@ -29,6 +29,15 @@ const optionSets = {
 const actors = Object.fromEntries(Object.entries(defaultWardrobe).map(([actor, outfit]) => [actor, makeActor(actor, outfit, art)]))
 const drawParticles = makeParticles(stage)
 const lineAudio = prepareSpeech(timing)
+const cutawayImages = Object.fromEntries(Object.entries(cutaways).map(([id, { art: name, alt }]) => {
+  const image = new Image()
+  image.src = art(name)
+  image.alt = alt
+  image.decoding = 'async'
+  image.hidden = true
+  stage.querySelector('.cutaways').append(image)
+  return [id, image]
+}))
 
 let mode = 'preview'
 let position = 0
@@ -41,6 +50,7 @@ let fallbackPosition = 0
 let gestureTime = Infinity
 let expressionTime = 0
 let displayedKey = ''
+let captionKey = ''
 let transportKey = ''
 let transportPosition = -1
 let loadedWardrobe
@@ -111,7 +121,12 @@ function sceneAt(seconds) {
 function view() {
   if (mode === 'manual') return { ...manual, mood: moods[manual.actor], moods, subtitle: false }
   const { beat, line, index, local } = sceneAt(position)
+  const direction = acting[index]
   const moodsForLine = beat.actor === 'male' ? { male: beat.mood, female: beat.reaction } : { male: beat.reaction, female: beat.mood }
+  const rooftopCostumes = wardrobe.male === defaultWardrobe.male && wardrobe.female === defaultWardrobe.female
+  const useCutaway = direction.cutaway && local >= direction.cutAt && manual.backdrop === 'roof' && rooftopCostumes
+  const cutaway = mode === 'preview' ? 'closing'
+    : useCutaway ? direction.cutaway : undefined
   return {
     actor: beat.actor,
     backdrop: manual.backdrop,
@@ -119,34 +134,36 @@ function view() {
     gesture: beat.gesture,
     mood: beat.mood,
     moods: moodsForLine,
-    subtitle: true,
-    beat, line, index, local, acting: acting[index],
+    camera: direction.camera,
+    cutaway,
+    subtitle: mode === 'scene' && (cutaway !== 'closing' || local < direction.cutAt + .24),
+    beat, line, index, local, acting: direction,
   }
 }
 
 function updateStage(state) {
-  const { actor, shot, backdrop, mood, gesture, beat, index, subtitle } = state
-  const key = [mode, actor, shot, backdrop, mood, gesture, wardrobe.male, wardrobe.female, index].join('/')
+  const { actor, shot, backdrop, mood, gesture, index, camera, cutaway } = state
+  const key = [mode, actor, shot, backdrop, mood, gesture, wardrobe.male, wardrobe.female, index, camera, cutaway].join('/')
   if (key === displayedKey) return
   displayedKey = key
   stage.dataset.shot = shot
   stage.dataset.presentation = mode
+  stage.dataset.camera = camera ?? ''
+  stage.dataset.cutaway = cutaway ?? ''
+  for (const [id, image] of Object.entries(cutawayImages)) image.hidden = id !== cutaway
   if (stage.dataset.backdrop !== backdrop || !stage.querySelector('.plate').style.backgroundImage) {
     stage.dataset.backdrop = backdrop
     stage.querySelector('.plate').style.backgroundImage = `url('${art(backdrop)}')`
   }
   stage.dataset.focus = actor
   byId('location').textContent = backdrops.find(([id]) => id === backdrop)[1]
-  byId('shot-slate').textContent = shots.find(([id]) => id === shot)[1]
+  byId('shot-slate').textContent = cutaway ? cutaways[cutaway].label : camera === 'reverse'
+    ? '越肩特写' : shots.find(([id]) => id === shot)[1]
 
   for (const [id, rig] of Object.entries(actors)) {
     rig.outfit(wardrobe[id])
-    rig.root.setAttribute('aria-hidden', String(shot !== 'pair' && id !== actor))
+    rig.root.dataset.framing = id === actor || shot === 'pair' ? 'subject' : camera === 'reverse' ? 'foreground' : 'offscreen'
   }
-  byId('subtitles').hidden = !subtitle || byId('subtitles-toggle').getAttribute('aria-pressed') === 'false'
-  byId('speaker').textContent = beat ? cast[actor].name : ''
-  byId('subtitle-zh').textContent = beat?.zh ?? ''
-  byId('subtitle-en').textContent = beat?.en ?? ''
   for (const line of scriptList.querySelectorAll('button')) line.setAttribute('aria-current', String(Number(line.dataset.line) === index))
   if (loadedWardrobe !== actor) {
     loadedWardrobe = actor
@@ -160,6 +177,20 @@ function updateStage(state) {
   }
 }
 
+function updateCaptions({ actor, beat, line, local, index, subtitle }) {
+  const visible = subtitle && byId('subtitles-toggle').getAttribute('aria-pressed') === 'true'
+  const clause = visible ? Math.max(0, line.clauses.findLastIndex(([start]) => local >= start - .045)) : -1
+  const key = visible ? `${index}/${clause}` : ''
+  if (key === captionKey) return
+  captionKey = key
+  byId('subtitles').hidden = !visible
+  if (!visible) return
+  const [zh, en] = beat.captions[clause]
+  byId('speaker').textContent = cast[actor].name
+  byId('subtitle-zh').textContent = zh
+  byId('subtitle-en').textContent = en
+}
+
 function formatTime(position) {
   const seconds = Math.floor(position + .0001)
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
@@ -171,7 +202,8 @@ function updateTransport() {
     seek.value = position
     seek.style.setProperty('--progress', `${(position / timing.duration) * 100}%`)
   }
-  const label = `${formatTime(position)} / ${formatTime(timing.duration)}`
+  const displayDuration = Math.ceil(timing.duration)
+  const label = `${formatTime(position >= timing.duration ? displayDuration : position)} / ${formatTime(displayDuration)}`
   const transportState = [mode, playing, audioAvailable, label].join('/')
   if (transportKey === transportState) return
   transportKey = transportState
@@ -197,9 +229,16 @@ function update(now = performance.now()) {
   }
   const state = view()
   updateStage(state)
+  updateCaptions(state)
   updateTransport()
   const ambient = previewTime ?? ((now - startTime) / 1000)
-  drawParticles(reduced.matches ? 0 : ambient, state.backdrop, state.shot)
+  drawParticles(reduced.matches ? 0 : ambient, state.backdrop, state.shot, state.actor, state.cutaway)
+  if (state.cutaway) {
+    const elapsed = mode === 'preview' ? (1 - Math.cos(ambient * .32)) * .48 : state.local - state.acting.cutAt
+    const movement = reduced.matches ? 0 : Math.min(1, elapsed / 1.6)
+    cutawayImages[state.cutaway].style.transform = `scale(${(1.012 + .032 * movement).toFixed(4)})`
+    return
+  }
   for (const [id, rig] of Object.entries(actors)) {
     if (state.shot !== 'pair' && id !== state.actor) continue
     const focused = id === state.actor
@@ -209,8 +248,10 @@ function update(now = performance.now()) {
     const expressionAge = mode === 'manual'
       ? (now - expressionTime) / 1000
       : state.local - (focused ? state.acting.expressionAt ?? -.2 : state.acting.reactionAt)
-    const look = mode === 'manual' ? (state.shot === 'pair' ? .66 : 0) : focused ? state.acting.look : state.acting.replyLook
-    const strength = mode === 'preview' ? 1 : Math.max(0, Math.min(1, expressionAge / .22))
+    const look = mode === 'manual' ? (state.shot === 'pair' ? .80 : 0) : focused
+      ? state.acting.look + (state.acting.lookAt === undefined ? 0 : .68 * Math.max(0, Math.min(1, (state.local - state.acting.lookAt) / .27)))
+      : state.acting.replyLook
+    const strength = mode === 'preview' ? (focused ? 1 : .52) : Math.max(0, Math.min(1, expressionAge / .28))
     rig.render({
       time: local, mood: state.moods[id], idleTime: ambient, voice, gesture, motion: !reduced.matches,
       gazeAt: look, strength, tearTime: expressionAge,
@@ -293,7 +334,6 @@ byId('sound').addEventListener('click', event => {
 byId('subtitles-toggle').addEventListener('click', event => {
   const button = event.currentTarget
   button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') === 'false'))
-  displayedKey = ''
   update()
 })
 byId('fullscreen').disabled = !document.fullscreenEnabled
@@ -332,6 +372,7 @@ scriptList.addEventListener('click', event => {
 })
 
 seek.value = 0
+byId('subtitles').hidden = true
 update()
 requestAnimationFrame(function tick(time) {
   update(time)
@@ -339,6 +380,32 @@ requestAnimationFrame(function tick(time) {
 })
 
 if (new URLSearchParams(location.search).has('capture')) {
+  function measureFps(milliseconds = 5000) {
+    return new Promise(resolve => {
+      let start
+      let last
+      const intervals = []
+      function sample(now) {
+        start ??= now
+        if (last !== undefined) intervals.push(now - last)
+        last = now
+        if (now - start < milliseconds || intervals.length === 0) {
+          requestAnimationFrame(sample)
+          return
+        }
+        const elapsed = now - start
+        const sorted = intervals.toSorted((a, b) => a - b)
+        resolve({
+          frames: intervals.length,
+          milliseconds: Math.round(elapsed),
+          fps: Number((1000 * intervals.length / elapsed).toFixed(1)),
+          p95Ms: Number(sorted[Math.ceil(sorted.length * .95) - 1].toFixed(1)),
+        })
+      }
+      requestAnimationFrame(sample)
+    })
+  }
+
   window.__manhua = {
     timing,
     get position() { return position },
@@ -346,5 +413,13 @@ if (new URLSearchParams(location.search).has('capture')) {
     get playing() { return playing },
     get media() { return { position: audio.currentTime, available: audioAvailable, started: mediaStarted, muted: audio.muted } },
     freeze(ambient) { previewTime = ambient; update() },
+    seek(seconds) { if (Number.isFinite(seconds)) skip(seconds) },
+    choose(group, value) {
+      const field = Array.from(controls.querySelectorAll('fieldset')).find(field => field.dataset.control === group)
+      const option = field && Array.from(field.querySelectorAll('button')).find(button => button.dataset.option === value)
+      option?.click()
+      return Boolean(option)
+    },
+    measureFps,
   }
 }

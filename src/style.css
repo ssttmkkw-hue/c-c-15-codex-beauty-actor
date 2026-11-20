@@ -157,7 +157,7 @@ nav {
 .workspace {
   width: min(1440px, calc(100% - 88px));
   margin: auto;
-  padding: 31px 0 30px;
+  padding: 25px 0 30px;
 }
 .page-heading {
   display: flex;
@@ -165,22 +165,6 @@ nav {
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 25px;
-}
-.eyebrow {
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  color: #e3a9c6;
-  font:
-    650 11px/1.12 Arial,
-    sans-serif;
-  letter-spacing: 0.2em;
-  margin: 0 0 8px;
-}
-.eyebrow span {
-  height: 1px;
-  width: 20px;
-  background: #dc98be;
 }
 h1 {
   font-family: var(--serif);
@@ -248,6 +232,7 @@ h1 {
   container-type: size;
 }
 .plate,
+.cutaways,
 .bloom,
 .particles,
 .cast,
@@ -261,14 +246,17 @@ h1 {
   background-size: cover;
   background-position: center 55%;
   transform-origin: 57% 55%;
-  filter: saturate(.77) brightness(.89) contrast(1.04) blur(2px);
+  filter: saturate(.82) brightness(.94) contrast(1.05) blur(1.5px);
 }
 .stage[data-shot="close"] .plate {
-  transform: translateX(-2%) scale(1.21);
-  filter: saturate(.67) brightness(.76) contrast(1.04) blur(10px);
+  transform: translate(-8%, -5%) scale(1.29);
+  filter: saturate(.78) brightness(.86) contrast(1.06) blur(7px);
 }
 .stage[data-shot="close"][data-focus="female"] .plate {
-  transform: translateX(3%) scale(1.23);
+  transform: translate(10%, -4%) scale(1.28);
+}
+.stage[data-camera="reverse"] .plate {
+  filter: saturate(.83) brightness(.83) blur(12px);
 }
 .stage[data-shot="three"] .plate {
   transform: scale(1.1) translateX(-1.4%);
@@ -277,6 +265,17 @@ h1 {
 .stage[data-backdrop="night"] .plate {
   background-position: center 56%;
 }
+.cutaways img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 43%;
+  transform-origin: 53% 46%;
+}
+.stage[data-cutaway]:not([data-cutaway=""]) :is(.plate, .cast, .bloom, .particles.rear) {
+  visibility: hidden;
+}
 .bloom {
   background:
     radial-gradient(ellipse at 53% 52%, #fbc18e42, transparent 34%),
@@ -284,18 +283,18 @@ h1 {
 }
 .stage[data-shot="close"] .bloom {
   background:
-    radial-gradient(ellipse at 74% 56%, #ffbd9155, transparent 29%),
-    radial-gradient(ellipse at 44% 45%, transparent 30%, #26173580 100%);
+    radial-gradient(ellipse at 66% 53%, #ffcbaf36, transparent 34%),
+    linear-gradient(116deg, #24191f63, transparent 65%);
 }
 .stage[data-shot="close"][data-focus="female"] .bloom {
   background:
-    radial-gradient(ellipse at 33% 54%, #ffc19146, transparent 32%),
-    radial-gradient(ellipse at 62% 43%, transparent 30%, #23143186 100%);
+    radial-gradient(ellipse at 49% 48%, #ffd0a836, transparent 42%),
+    linear-gradient(72deg, #2120351a, transparent 40%, #2e153665);
 }
 .stage[data-backdrop="night"] .bloom {
   background:
-    radial-gradient(ellipse at 73% 41%, #1ea1d334, transparent 47%),
-    radial-gradient(ellipse at 17% 56%, #e67aaf34, transparent 39%);
+    radial-gradient(ellipse at 52% 44%, #408cc73f, transparent 42%),
+    radial-gradient(ellipse at 12% 63%, #ffb17b27, transparent 42%);
 }
 .particles {
   width: 100%;
@@ -303,8 +302,8 @@ h1 {
 }
 .grade {
   background:
-    linear-gradient(0deg, #21152e77, transparent 21%),
-    radial-gradient(ellipse at 51% 45%, transparent 54%, #170d2f59);
+    linear-gradient(0deg, #21152e46, transparent 20%),
+    radial-gradient(ellipse at 52% 46%, transparent 57%, #19122c53);
 }
 .stage[data-backdrop="night"] .grade {
   background:
@@ -326,16 +325,16 @@ h1 {
     opacity 0.26s ease;
 }
 .actor[data-actor="male"] {
-  --actor-left: 29.5%;
-  --actor-top: 0%;
-  --sprite-width: 98cqh;
+  --actor-left: 29%;
+  --actor-top: -2%;
+  --sprite-width: 102cqh;
 }
 .actor[data-actor="female"] {
-  --actor-left: 71.5%;
-  --actor-top: 11%;
-  --sprite-width: 87cqh;
+  --actor-left: 70%;
+  --actor-top: 14%;
+  --sprite-width: 83cqh;
 }
-.actor[aria-hidden="true"] {
+.actor[data-framing="offscreen"] {
   opacity: 0;
   visibility: hidden;
 }
@@ -379,6 +378,28 @@ h1 {
   --actor-top: -5%;
   --actor-left: 58%;
 }
+.stage[data-camera="reverse"] .actor[data-framing="subject"] {
+  --actor-left: 37%;
+  --actor-top: -7%;
+  --sprite-width: 111cqh;
+}
+.stage[data-camera="reverse"] .actor[data-framing="subject"][data-actor="female"] {
+  --actor-left: 62%;
+  --actor-top: 2%;
+  --sprite-width: 108cqh;
+}
+.stage[data-camera="reverse"] .actor[data-framing="foreground"] {
+  --actor-left: -7%;
+  --actor-top: -12%;
+  --sprite-width: 127cqh;
+  z-index: 1;
+  opacity: .77;
+  filter: blur(14px) brightness(.38) saturate(.74);
+}
+.stage[data-camera="reverse"] .actor[data-framing="foreground"][data-actor="female"] {
+  --actor-left: 111%;
+  --actor-top: 0%;
+}
 .stage[data-shot="three"] .actor {
   --sprite-width: 85cqh;
   --actor-top: 1%;
@@ -395,7 +416,7 @@ h1 {
 .subtitles {
   position: absolute;
   isolation: isolate;
-  bottom: clamp(17px, 5cqh, 29px);
+  bottom: clamp(14px, 4cqh, 23px);
   left: 6%;
   right: 6%;
   text-align: center;
@@ -407,9 +428,9 @@ h1 {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: -45% -7% -45%;
-  background: radial-gradient(ellipse at 50% 91%, #130b1cb0 5%, #19112668 40%, transparent 74%);
-  mask-image: linear-gradient(transparent, #000 34%);
+  inset: -40% -7% -40%;
+  background: radial-gradient(ellipse at 50% 87%, #110a1bb5 9%, #1911266b 33%, transparent 72%);
+  mask-image: linear-gradient(transparent, #000 37%);
   pointer-events: none;
 }
 .speaker {
@@ -420,7 +441,7 @@ h1 {
   color: #ffd0c9;
   font-size: 12px;
   letter-spacing: 0.12em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .speaker span {
   width: 14px;
@@ -599,14 +620,6 @@ h1 {
 .inspector-heading h2 {
   font-size: 16px;
   letter-spacing: 0.075em;
-  margin: 0 0 2px;
-}
-.inspector-heading p {
-  font:
-    650 10px/1.2 Arial,
-    sans-serif;
-  letter-spacing: 0.16em;
-  color: #af99bc;
   margin: 0;
 }
 .control-group {
@@ -846,15 +859,6 @@ h1 {
   h1 {
     font-size: 34px;
   }
-  .eyebrow {
-    font-size: 9px;
-    margin-bottom: 6px;
-    gap: 5px;
-    letter-spacing: 0.1em;
-  }
-  .eyebrow span {
-    width: 9px;
-  }
   .logline {
     font-size: 11px;
     letter-spacing: 0;
@@ -901,8 +905,15 @@ h1 {
     --actor-left: 61%;
     --actor-top: 8%;
   }
+  .stage[data-camera="reverse"] .actor[data-framing="foreground"] {
+    --actor-left: -14%;
+    --sprite-width: 110cqh;
+  }
+  .stage[data-camera="reverse"] .actor[data-framing="foreground"][data-actor="female"] {
+    --actor-left: 115%;
+  }
   .subtitles {
-    bottom: 16px;
+    bottom: 12px;
     left: 6%;
     right: 6%;
   }
@@ -911,8 +922,12 @@ h1 {
     margin-top: 3px;
   }
   .speaker {
-    font-size: 10px;
-    margin-bottom: 3px;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .transport {
     min-height: 48px;
@@ -939,7 +954,7 @@ h1 {
     gap: 4px;
   }
   .choice {
-    min-height: 38px;
+    min-height: 40px;
     font-size: 11px;
     padding-inline: 2px;
   }

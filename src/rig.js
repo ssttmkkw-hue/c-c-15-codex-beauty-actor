@@ -2,8 +2,7 @@ const landmarks = {
   male: {
     mouth: [602, 621, -7.5, 1],
     smilePatch: [524, 584, 157, 77],
-    lip: ['#985749', '#c1826e', '#51282a', '#eab29d'],
-    skin: ['#d4a597', '#dbad9e', '#e3b3a3'],
+    lip: ['#a56152', '#c38976', '#652f2c', '#f6bfa8'],
     eyeStrip: [365, 358, 420, 179],
     tears: [[515, 480, 45, -3], [671, 460, 40, 4]],
     cheeks: [[462, 525, 63, 38], [677, 505, 44, 34]],
@@ -12,13 +11,22 @@ const landmarks = {
   female: {
     mouth: [516, 622, -4, .95],
     smilePatch: [436, 578, 160, 87],
-    lip: ['#c06b68', '#df918b', '#642b37', '#ffd0b9'],
-    skin: ['#edbdb6', '#efb9b5', '#f0beba'],
+    lip: ['#c66e6d', '#e48886', '#742e3f', '#ffd9c4'],
     eyeStrip: [261, 322, 493, 221],
     tears: [[394, 486, 46, 3], [584, 456, 51, -3]],
     cheeks: [[408, 525, 69, 39], [619, 499, 73, 43]],
     hair: ['M481 167 Q444 290 469 394 Q489 446 518 470', 'M241 549 Q207 619 162 660 Q125 700 63 720', 'M805 455 Q845 517 889 542 Q950 583 954 662'],
   },
+}
+
+// The color across the exposed skin shifts slightly in each painted plate.
+const mouthSkin = {
+  ink: ['#d3a798', '#d9ab9d', '#e9b8a7'],
+  ivory: ['#d7ada2', '#dcb1a5', '#e9bcae'],
+  wine: ['#d6a898', '#dcac9d', '#ebb7a6'],
+  blush: ['#edb9b4', '#edb5af', '#eebcb6'],
+  nocturne: ['#efbeb8', '#edb9b3', '#efbeb8'],
+  jade: ['#f0c0b9', '#efbcb5', '#f2c2bb'],
 }
 
 const moodPose = {
@@ -66,23 +74,23 @@ function tearMarkup(actor, [x, y, width, tilt]) {
   </g>`
 }
 
-function mouthMarkup(actor, { mouth, smilePatch, lip, skin }, art) {
+function mouthMarkup(actor, { mouth, smilePatch, lip }, art) {
   const [x, y, tilt, scale] = mouth
   return `<defs>
-    <radialGradient id="${actor}-skin-fade"><stop offset=".79" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient>
-    <mask id="${actor}-skin-mask" maskUnits="userSpaceOnUse" x="-78" y="-42" width="156" height="84"><ellipse rx="78" ry="42" fill="url(#${actor}-skin-fade)"/></mask>
-    <linearGradient id="${actor}-skin"><stop stop-color="${skin[0]}"/><stop offset=".50" stop-color="${skin[1]}"/><stop offset="1" stop-color="${skin[2]}"/></linearGradient>
-    <linearGradient id="${actor}-upper-lip" x2="0" y2="1"><stop stop-color="${lip[0]}" stop-opacity="0"/><stop offset=".56" stop-color="${lip[0]}" stop-opacity=".67"/><stop offset="1" stop-color="${lip[2]}" stop-opacity=".90"/></linearGradient>
-    <linearGradient id="${actor}-lower-lip" x2="0" y2="1"><stop stop-color="${lip[2]}" stop-opacity=".72"/><stop offset=".29" stop-color="${lip[1]}"/><stop offset=".62" stop-color="${lip[1]}" stop-opacity=".60"/><stop offset="1" stop-color="${lip[0]}" stop-opacity="0"/></linearGradient>
-    <radialGradient id="${actor}-cavity" cx=".59" cy="1" r=".89"><stop stop-color="#915057"/><stop offset=".48" stop-color="#542a2d"/><stop offset="1" stop-color="#31181e"/></radialGradient>
-    <linearGradient id="${actor}-teeth" x2="0" y2="1"><stop stop-color="#b48c8f"/><stop offset="1" stop-color="#ffe3d8"/></linearGradient>
+    <radialGradient id="${actor}-skin-fade"><stop offset=".75" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient>
+    <mask id="${actor}-skin-mask" maskUnits="userSpaceOnUse" x="-83" y="-38" width="166" height="80"><ellipse cy="2" rx="83" ry="40" fill="url(#${actor}-skin-fade)"/></mask>
+    <linearGradient id="${actor}-skin"><stop class="skin-color"/><stop class="skin-color" offset=".48"/><stop class="skin-color" offset="1"/></linearGradient>
+    <linearGradient id="${actor}-upper-lip" x2="0" y2="1"><stop stop-color="${lip[0]}" stop-opacity="0"/><stop offset=".46" stop-color="${lip[0]}" stop-opacity=".79"/><stop offset="1" stop-color="${lip[2]}" stop-opacity=".95"/></linearGradient>
+    <linearGradient id="${actor}-lower-lip" x2="0" y2="1"><stop stop-color="${lip[2]}" stop-opacity=".69"/><stop offset=".36" stop-color="${lip[1]}"/><stop offset=".67" stop-color="${lip[1]}" stop-opacity=".71"/><stop offset="1" stop-color="${lip[0]}" stop-opacity="0"/></linearGradient>
+    <radialGradient id="${actor}-cavity" cx=".57" cy=".93" r=".87"><stop stop-color="#9f5659"/><stop offset=".49" stop-color="#653134"/><stop offset="1" stop-color="#3b2027"/></radialGradient>
+    <linearGradient id="${actor}-teeth" x2="0" y2="1"><stop stop-color="#cb9990"/><stop offset="1" stop-color="#ffe5d8"/></linearGradient>
     <linearGradient id="${actor}-tongue" x2="0" y2="1"><stop stop-color="#a96270"/><stop offset="1" stop-color="#783846"/></linearGradient>
     <radialGradient id="${actor}-chin-shadow"><stop stop-color="${lip[2]}" stop-opacity=".19"/><stop offset="1" stop-color="${lip[2]}" stop-opacity="0"/></radialGradient>
     <clipPath id="${actor}-mouth-clip"><path class="mouth-clip"/></clipPath>
   </defs>
   ${mouthPoses.map(pose => `<image class="mouth-${pose}" ${artBox(smilePatch)} opacity="0" href="${art(`${actor}-mouth-${pose}`)}"/>`).join('')}
   <g class="mouth" transform="translate(${x} ${y}) rotate(${tilt}) scale(${scale})" opacity="0">
-    <rect x="-78" y="-42" width="156" height="84" fill="url(#${actor}-skin)" mask="url(#${actor}-skin-mask)"/>
+    <rect x="-83" y="-38" width="166" height="80" fill="url(#${actor}-skin)" mask="url(#${actor}-skin-mask)"/>
     <ellipse class="chin-shadow" cx="2" cy="21" rx="27" ry="9" fill="url(#${actor}-chin-shadow)"/>
     <path class="upper-lip" fill="url(#${actor}-upper-lip)"/>
     <path class="lower-lip" fill="url(#${actor}-lower-lip)"/>
@@ -101,10 +109,10 @@ function markup(actor, outfit, art) {
     <defs>
       <mask id="${actor}-silhouette" maskUnits="userSpaceOnUse" style="mask-type:alpha" x="0" y="0" width="1024" height="1536"><use href="#${actor}-sprite"/></mask>
       <linearGradient id="${actor}-sign" x1="${actor === 'male' ? 1 : 0}" x2="${actor === 'male' ? 0 : 1}">
-        <stop stop-color="#9ecfff" stop-opacity=".50"/><stop offset=".37" stop-color="#8caaff" stop-opacity=".095"/><stop offset=".63" stop-color="#f599ce" stop-opacity="0"/><stop offset="1" stop-color="#e68ccc" stop-opacity=".31"/>
+        <stop stop-color="#8abfdd" stop-opacity=".34"/><stop offset=".34" stop-color="#72a9e1" stop-opacity=".095"/><stop offset=".66" stop-color="#efb793" stop-opacity="0"/><stop offset="1" stop-color="#f3a578" stop-opacity=".31"/>
       </linearGradient>
       <filter id="${actor}-night-grade" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-        <feColorMatrix values=".73 .14 .02 0 .008 .065 .81 .055 0 .012 .115 .24 .79 0 .018 0 0 0 1 0"/>
+        <feColorMatrix values=".84 .095 .02 0 .003 .04 .83 .07 0 .006 .07 .20 .82 0 .010 0 0 0 1 0"/>
       </filter>
       <radialGradient id="${actor}-blush"><stop stop-color="#d4536a" stop-opacity=".51"/><stop offset=".54" stop-color="#dc6a7e" stop-opacity=".28"/><stop offset="1" stop-color="#e07689" stop-opacity="0"/></radialGradient>
       <linearGradient id="${actor}-lock"><stop stop-color="#ffbfb8" stop-opacity="0"/><stop offset=".62" stop-color="#ffb5ba"/><stop offset="1" stop-color="#ffbfb8" stop-opacity="0"/></linearGradient>
@@ -131,14 +139,14 @@ function markup(actor, outfit, art) {
 }
 
 function mouthShape(open, round, spread, smile, direction) {
-  const width = 48 - 23 * round + 10 * spread
-  const gap = 1.15 + open * (21 + 5 * round)
+  const width = 45 - 20 * round + 12 * spread
+  const gap = 1.1 + open * (25 + 6 * round)
   const top = -gap * .37
   const bottom = gap * .70
   const bow = -3.1 + round * 2.6
-  const lift = -smile * 11
-  const left = lift + direction * 1.6 + open * 3
-  const right = lift - direction * 1.6 + open * 3
+  const lift = -smile * 8
+  const left = lift + direction * (1.7 + smile * 1.9) + open * 2
+  const right = lift - direction * (1.7 + smile * 1.9) + open * 2
   const f = value => Number(value.toFixed(2))
   const end = `${f(width)} ${f(right)}`
   const start = `${f(-width)} ${f(left)}`
@@ -150,7 +158,7 @@ function mouthShape(open, round, spread, smile, direction) {
     opening: `${upper} ${lower}Z`,
     teeth: `M${f(-width * .83)} ${f(top - 6)} L${f(width * .83)} ${f(top - 6)} ${f(width * .67)} ${f(top + 2)} Q5 ${f(top + 6 + Math.min(1.8, gap * .15))} ${f(-width * .69)} ${f(top + 2)}Z`,
     tongue: `M${f(-width * .58)} ${f(bottom + 2)} Q${f(-width * .43)} ${f(bottom - gap * .33)} 2 ${f(bottom - gap * .18)} Q${f(width * .43)} ${f(bottom - gap * .44)} ${f(width * .59)} ${f(bottom + 1)}Z`,
-    light: `M${f(-width * .32)} ${f(bottom + 5.4)} Q${f(-width * .19)} ${f(bottom + 6.6)} -3 ${f(bottom + 6.7)} M1 ${f(bottom + 6.7)} Q${f(width * .19)} ${f(bottom + 6.6)} ${f(width * .28)} ${f(bottom + 5.2)}`,
+    light: `M${f(-width * .30)} ${f(bottom + 5.4)} Q${f(-width * .16)} ${f(bottom + 6.6)} -3 ${f(bottom + 6.7)} M2 ${f(bottom + 6.7)} Q${f(width * .16)} ${f(bottom + 6.1)} ${f(width * .26)} ${f(bottom + 4.8)}`,
     shadowAt: f(bottom + 18),
   }
 }
@@ -159,13 +167,13 @@ function motionPose(name, idle, time, gesture, motion, tilt) {
   const wind = Math.sin(idle * .91)
   const breath = Math.sin(idle * 1.59)
   const direction = name === 'male' ? 1 : -1
-  const pulse = motion ? smooth(time / .28) * (1 - smooth((time - .44) / .70)) : 0
-  const nod = gesture === 'nod' ? pulse * (.80 + Math.sin(time * 7.5) * .20) : 0
+  const pulse = motion ? smooth(time / .35) * (1 - smooth((time - .52) / .72)) : 0
+  const nod = gesture === 'nod' && motion ? smooth(time / .25) * (1 - smooth((time - .32) / .37)) : 0
   const turn = gesture === 'tilt' ? 2.15 * pulse : 0
   const lean = gesture === 'lean' ? pulse : 0
   return {
     wind, breath,
-    transform: `translate(${(wind * .23 + direction * lean * 2.1).toFixed(3)}%, ${(breath * .17 + nod * .68 - lean * .24).toFixed(3)}%) rotate(${(tilt + wind * .26 + direction * (turn + lean * 1.03) + nod * 1.28).toFixed(3)}deg) scale(${(1 + lean * .018).toFixed(4)}, ${(1 + breath * .004 + nod * .007 + lean * .015).toFixed(4)})`,
+    transform: `translate(${(wind * .25 + direction * lean * 2.4).toFixed(3)}%, ${(breath * .17 + nod * .91 - lean * .26).toFixed(3)}%) rotate(${(tilt + wind * .28 + direction * (turn + lean * 1.19 + nod * .91)).toFixed(3)}deg) scale(${(1 + lean * .021).toFixed(4)}, ${(1 + breath * .004 + nod * .005 + lean * .012).toFixed(4)})`,
   }
 }
 
@@ -193,6 +201,7 @@ export function makeActor(name, outfit, art) {
   }).map(([key, selector]) => [key, find(selector)]))
   const clip = find('.mouth-clip')
   const shadow = find('.chin-shadow')
+  const skin = root.querySelectorAll('.skin-color')
   const lastOpacity = new WeakMap()
   let lastMouth = ''
 
@@ -212,11 +221,12 @@ export function makeActor(name, outfit, art) {
     const blinkPeriod = name === 'male' ? 5.13 : 4.73
     const blinkPhase = idle % blinkPeriod
     const blink = motion ? smooth(1.5 - Math.abs(blinkPhase - .12) * 14) : 0
-    const expressionVisible = strength >= .47
-    const restingEyes = name === 'male' && gazeAt > .52 ? 'partner' : 'neutral'
-    const eyeShape = expressionVisible && mood !== 'neutral' ? (mood === 'shy' ? 'smile' : mood) : restingEyes
+    const expression = mood === 'shy' ? 'smile' : mood
+    const expressionWeight = smooth(strength)
+    const partner = smooth((gazeAt - .31) / .39) * (mood === 'neutral' ? 1 : 1 - expressionWeight)
     for (const [pose, layer] of Object.entries(eyeLayers)) {
-      opacity(layer, pose === 'blink' ? blink : pose === eyeShape ? 1 : 0)
+      const weight = pose === 'blink' ? blink : pose === 'partner' ? partner : pose === expression ? expressionWeight : 0
+      opacity(layer, weight)
     }
     opacity(blush, flush * strength)
     for (const [i, { layer, track, drop }] of tears.entries()) {
@@ -236,13 +246,13 @@ export function makeActor(name, outfit, art) {
 
     const restingPose = mood === 'shy' ? 'smile' : mood
     const paintedMouth = mouthLayers[restingPose]
-    const mouthAmount = Math.max(smooth(voice.activity * (1 - voice.seal) / .49), paintedMouth || mood === 'neutral' ? 0 : strength)
+    const mouthAmount = Math.max(smooth(voice.activity * (1 - voice.seal) / .61), paintedMouth || mood === 'neutral' ? 0 : strength)
     for (const layer of Object.values(mouthLayers)) {
-      opacity(layer, layer === paintedMouth && expressionVisible && mouthAmount < .52 ? 1 : 0)
+      opacity(layer, layer === paintedMouth ? expressionWeight * (1 - smooth(mouthAmount / .78)) : 0)
     }
     opacity(mouth, mouthAmount)
     if (!mouthAmount) return
-    const openness = Math.max(open * strength * (1 - .43 * voice.activity), voice.jaw)
+    const openness = Math.max(open * strength * (1 - .62 * voice.activity), voice.jaw)
     const rounding = voice.round + (mood === 'surprised' ? .68 * strength * (1 - voice.activity) : 0)
     opacity(paths.teeth, smooth((openness - .21) / .37) * (1 - rounding) * voice.activity * .83)
     opacity(paths.tongue, smooth((openness - .24) / .45) * .64)
@@ -262,6 +272,7 @@ export function makeActor(name, outfit, art) {
       if (root.dataset.outfit !== value) {
         root.dataset.outfit = value
         sprite.setAttribute('href', art(value))
+        skin.forEach((stop, index) => stop.setAttribute('stop-color', mouthSkin[value][index]))
       }
     },
   }

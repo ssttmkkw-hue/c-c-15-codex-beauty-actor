@@ -41,7 +41,7 @@ function layer(canvas, foreground) {
   let height = 0
   let lastPaint = -1
   let lastSet
-  let lastShot
+  let lastFraming
 
   new ResizeObserver(() => {
     const box = canvas.getBoundingClientRect()
@@ -54,29 +54,33 @@ function layer(canvas, foreground) {
     lastPaint = -1
   }).observe(canvas)
 
-  function draw(time, backdrop, shot) {
+  function draw(time, backdrop, shot, focus, cutaway) {
     const tick = Math.floor(time * 45)
-    if (!width || !height || (lastPaint === tick && lastSet === backdrop && lastShot === shot)) return
+    const framing = cutaway ?? `${shot}/${focus}`
+    if (!width || !height || (lastPaint === tick && lastSet === backdrop && lastFraming === framing)) return
     lastPaint = tick
     lastSet = backdrop
-    lastShot = shot
+    lastFraming = framing
     ctx.clearRect(0, 0, width, height)
+    if (cutaway && !foreground) return
     const night = backdrop === 'night'
     const scale = Math.max(.58, height / 540)
     const close = shot === 'close'
     const warm = night ? rainGlow : duskGlow
-    const pink = night ? rainRose : duskRose
+    const accent = night ? rainRose : duskRose
+    const faceCenters = shot === 'pair' || cutaway === 'closing' ? [.32, .68] : [focus === 'male' ? .42 : .58]
 
     for (const [index, light] of lights.entries()) {
+      if (cutaway && index > 2) break
       const x = width * (foreground ? (index % 2 ? .82 + light.x * .24 : light.x * .17) : light.x)
       const y = height * (foreground ? .2 + light.y * .8 : (night ? .30 : .58) + light.y * .28)
-      const radius = scale * (foreground ? 19 + light.size * 48 : (close ? 6 : 2) + light.size * (close ? 30 : 12))
-      ctx.globalAlpha = (foreground ? .19 : .32) * (.8 + .2 * Math.sin(time * .7 + light.phase))
-      ctx.drawImage(index % 3 ? warm : pink, x - radius, y - radius, radius * 2, radius * 2)
+      const radius = scale * (foreground ? 25 + light.size * 52 : (close ? 5 : 2) + light.size * (close ? 27 : 11))
+      ctx.globalAlpha = (foreground ? .25 : .37) * (.83 + .17 * Math.sin(time * .7 + light.phase))
+      ctx.drawImage(index % 3 ? warm : accent, x - radius, y - radius, radius * 2, radius * 2)
     }
 
     for (const [index, mote] of weather.entries()) {
-      if (!night && index >= (foreground ? 10 : 25)) break
+      if (!night && index >= (cutaway ? 6 : foreground ? 8 : 19)) break
       const spin = mote.spin + time * (mote.speed + .25)
       const x = wrap(mote.x * width + time * (night ? -39 : 11 + mote.speed * 19) * scale + Math.sin(spin) * 16 + 48, width + 96) - 48
       const y = wrap(mote.y * height + time * (night ? 200 + mote.speed * 260 : 15 + mote.speed * 20) * scale + 28, height + 56) - 28
@@ -92,13 +96,14 @@ function layer(canvas, foreground) {
         ctx.stroke()
       } else {
         const flip = Math.sin(spin)
-        const center = x > width * .19 && x < width * .83 && y > height * .24 && y < height * .65
+        const nearFace = foreground && faceCenters.some(center =>
+          Math.hypot((x / width - center) / .18, (y / height - .44) / .29) < 1)
         ctx.save()
         ctx.translate(x, y)
         ctx.rotate(spin * .55 + index)
         ctx.scale(size, size * (.21 + Math.abs(flip) * .66))
-        ctx.globalAlpha = (.27 + mote.size * .49) * (foreground && center ? .50 : 1)
-        ctx.fillStyle = flip > 0 ? '#ffd0c9' : '#cd759e'
+        ctx.globalAlpha = (.23 + mote.size * .43) * (nearFace ? .20 : 1)
+        ctx.fillStyle = flip > 0 ? '#ffcec3' : '#cd759e'
         ctx.fill(petal)
         if (foreground && mote.size > .40) {
           ctx.lineWidth = .06
@@ -116,8 +121,8 @@ function layer(canvas, foreground) {
 export function makeParticles(stage) {
   const rear = layer(stage.querySelector('.rear'), false)
   const fore = layer(stage.querySelector('.fore'), true)
-  return (time, backdrop, shot) => {
-    rear(time, backdrop, shot)
-    fore(time, backdrop, shot)
+  return (time, backdrop, shot, focus, cutaway) => {
+    rear(time, backdrop, shot, focus, cutaway)
+    fore(time, backdrop, shot, focus, cutaway)
   }
 }
