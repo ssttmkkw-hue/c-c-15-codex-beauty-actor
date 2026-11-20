@@ -2,8 +2,9 @@ import './style.css'
 import { icon } from './icons.js'
 import { makeParticles } from './particles.js'
 import { makeActor } from './rig.js'
-import { cast, expressions, shots, backdrops, gestures, beats } from './scenes.js'
+import { cast, expressions, shots, backdrops, gestures, beats, acting } from './scenes.js'
 import timing from './voice-timing.json'
+import { prepareSpeech, sampleVoice, silent } from './speech.js'
 
 const byId = id => document.getElementById(id)
 const stage = byId('stage')
@@ -27,11 +28,7 @@ const optionSets = {
 }
 const actors = Object.fromEntries(Object.entries(defaultWardrobe).map(([actor, outfit]) => [actor, makeActor(actor, outfit, art)]))
 const drawParticles = makeParticles(stage)
-const silent = { energy: 0, round: 0 }
-const lineAudio = timing.lines.map(line => ({
-  ...line,
-  energy: [...line.envelope].map(hex => parseInt(hex, 16) / 15),
-}))
+const lineAudio = prepareSpeech(timing)
 
 let mode = 'preview'
 let position = 0
@@ -42,6 +39,7 @@ let playbackToken = 0
 let fallbackTime = 0
 let fallbackPosition = 0
 let gestureTime = Infinity
+let expressionTime = 0
 let displayedKey = ''
 let transportKey = ''
 let transportPosition = -1
@@ -64,7 +62,7 @@ function optionMarkup(group, [id, label]) {
   if (group === 'actor') {
     content = `<span class="portrait" style="background-image:url('${art(defaultWardrobe[id])}')"></span><span><strong>${label}</strong><small>${cast[id].role}</small></span>`
   }
-  if (group === 'outfit') content = `<i aria-hidden="true" class="swatch" style="--swatch:${swatches[id]}"></i>${label}`
+  if (group === 'outfit') content = `<img class="costume-sample" alt="" src="${art(id)}" style="--wardrobe-color:${swatches[id]};--wardrobe-y:${id === 'nocturne' ? '93%' : '80%'}"><span>${label}</span>`
   return `<button class="choice ${group === 'actor' ? 'cast-choice' : ''}" data-option="${id}" aria-pressed="false">${content}</button>`
 }
 
@@ -92,7 +90,10 @@ controls.addEventListener('click', event => {
   pause()
   mode = 'manual'
   if (group === 'outfit') wardrobe[manual.actor] = value
-  else if (group === 'mood') moods[manual.actor] = value
+  else if (group === 'mood') {
+    moods[manual.actor] = value
+    expressionTime = performance.now()
+  }
   else manual[group] = value
 
   if (group === 'actor' && manual.shot === 'pair') manual.shot = 'close'
@@ -107,22 +108,6 @@ function sceneAt(seconds) {
   return { beat: beats[index], index, line, local: Math.max(0, seconds - line.start) }
 }
 
-function sampleVoice(line, time) {
-  const point = time / timing.step
-  const frame = Math.floor(point)
-  const mix = point - frame
-  const energy = (line.energy[frame] ?? 0) * (1 - mix) + (line.energy[frame + 1] ?? 0) * mix
-  const clause = line.clauses.find(([start, end]) => time >= start && time < end)
-  if (!clause || energy < .022) return silent
-  const [start, end, pinyin] = clause
-  const syllableTime = ((time - start) / (end - start)) * pinyin.length
-  const word = pinyin[Math.min(pinyin.length - 1, Math.floor(syllableTime))]
-  const local = syllableTime % 1
-  const round = /(?:ong|uo|ou|ao|u|o|ü)/.test(word) ? .71 : /i/.test(word) ? .08 : .22
-  const closure = /^[bmp]/.test(word) && local < .19 ? .18 + local * 3 : 1
-  return { energy: energy * closure, round }
-}
-
 function view() {
   if (mode === 'manual') return { ...manual, mood: moods[manual.actor], moods, subtitle: false }
   const { beat, line, index, local } = sceneAt(position)
@@ -135,7 +120,7 @@ function view() {
     mood: beat.mood,
     moods: moodsForLine,
     subtitle: true,
-    beat, line, index, local,
+    beat, line, index, local, acting: acting[index],
   }
 }
 
@@ -198,6 +183,7 @@ function updateTransport() {
   setIcon(premiere.firstElementChild, playing ? 'pause' : 'play')
   premiere.lastElementChild.textContent = playing ? '暂停短剧' : '播放短剧'
   byId('screen-state').textContent = playing ? (audioAvailable ? '正在放映' : '静音放映') : { manual: '手动调演', preview: '场景预览', scene: position >= timing.duration ? '放映结束' : '放映暂停' }[mode]
+  byId('return-to-scene').hidden = mode !== 'manual'
 }
 
 function update(now = performance.now()) {
@@ -213,14 +199,22 @@ function update(now = performance.now()) {
   updateStage(state)
   updateTransport()
   const ambient = previewTime ?? ((now - startTime) / 1000)
-  drawParticles(reduced.matches ? 0 : ambient, state.backdrop)
+  drawParticles(reduced.matches ? 0 : ambient, state.backdrop, state.shot)
   for (const [id, rig] of Object.entries(actors)) {
     if (state.shot !== 'pair' && id !== state.actor) continue
     const focused = id === state.actor
-    const local = mode === 'manual' ? Math.max(0, (now - gestureTime) / 1000) : state.local
-    const voice = mode === 'scene' && focused ? sampleVoice(state.line, local) : silent
+    const local = mode === 'manual' ? (now - gestureTime) / 1000 : state.local - state.acting.gestureAt
+    const voice = mode === 'scene' && focused ? sampleVoice(state.line, state.local) : silent
     const gesture = focused && mode !== 'preview' ? state.gesture : 'idle'
-    rig.render({ time: local, mood: state.moods[id], idleTime: ambient, voice, gesture, motion: !reduced.matches })
+    const expressionAge = mode === 'manual'
+      ? (now - expressionTime) / 1000
+      : state.local - (focused ? state.acting.expressionAt ?? -.2 : state.acting.reactionAt)
+    const look = mode === 'manual' ? (state.shot === 'pair' ? .66 : 0) : focused ? state.acting.look : state.acting.replyLook
+    const strength = mode === 'preview' ? 1 : Math.max(0, Math.min(1, expressionAge / .22))
+    rig.render({
+      time: local, mood: state.moods[id], idleTime: ambient, voice, gesture, motion: !reduced.matches,
+      gazeAt: look, strength, tearTime: expressionAge,
+    })
   }
 }
 
@@ -253,7 +247,8 @@ async function play(fromStart = false) {
     update()
     return
   }
-  if (fromStart || mode !== 'scene' || position >= timing.duration) skip(0)
+  if (fromStart || position >= timing.duration) skip(0)
+  else if (mode !== 'scene') skip(position)
   playing = true
   const token = ++playbackToken
   fallbackTime = performance.now()
@@ -284,6 +279,10 @@ seek.addEventListener('input', () => skip(Number(seek.value)))
 byId('play').addEventListener('click', () => play())
 byId('premiere').addEventListener('click', () => play())
 byId('restart').addEventListener('click', () => play(true))
+byId('return-to-scene').addEventListener('click', () => {
+  skip(position)
+  byId('play').focus()
+})
 byId('sound').addEventListener('click', event => {
   const button = event.currentTarget
   audio.muted = !audio.muted

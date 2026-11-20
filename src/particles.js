@@ -5,17 +5,43 @@ function seeded(seed) {
   }
 }
 
+const petal = new Path2D('M-1 .2 C-.68 -.48 -.22 -.71 .41 -.59 L.35 -.34 Q.6 -.37 .79 -.47 C1.04 .11 .42 .73 -.25 .53 Q-.72 .45 -1 .2Z')
+const vein = new Path2D('M-.86 .2 Q-.21 .24 .48 -.31')
+const wrap = (value, span) => ((value % span) + span) % span
+
+function softLight(inner, outer) {
+  const image = document.createElement('canvas')
+  image.width = 96
+  image.height = 96
+  const ctx = image.getContext('2d')
+  const falloff = ctx.createRadialGradient(48, 48, 1, 48, 48, 48)
+  falloff.addColorStop(0, inner)
+  falloff.addColorStop(.38, outer)
+  falloff.addColorStop(.7, outer.slice(0, 7) + '28')
+  falloff.addColorStop(1, outer.slice(0, 7) + '00')
+  ctx.fillStyle = falloff
+  ctx.fillRect(0, 0, 96, 96)
+  return image
+}
+
 function layer(canvas, foreground) {
   const ctx = canvas.getContext('2d')
   const random = seeded(foreground ? 1447 : 3551)
-  const motes = Array.from({ length: foreground ? 19 : 46 }, () => ({
-    x: random(), y: random(), spin: random() * 6.3, speed: random(),
-    size: random(), glint: random(), color: random() > .45 ? '#ffb3ce' : '#f7d3e6',
+  const weather = Array.from({ length: foreground ? 22 : 42 }, () => ({
+    x: random(), y: random(), spin: random() * 6.28, speed: random(), size: random(),
   }))
+  const lights = Array.from({ length: foreground ? 5 : 26 }, () => ({
+    x: random(), y: random(), size: random(), phase: random() * 6.28,
+  }))
+  const duskGlow = softLight('#ffdcb6cc', '#ffc38982')
+  const duskRose = softLight('#ffe0ed9c', '#f5aebc5e')
+  const rainGlow = softLight('#e1e9ffcc', '#87b5f391')
+  const rainRose = softLight('#ffe0ebcc', '#ee8fc782')
   let width = 0
   let height = 0
   let lastPaint = -1
   let lastSet
+  let lastShot
 
   new ResizeObserver(() => {
     const box = canvas.getBoundingClientRect()
@@ -28,55 +54,70 @@ function layer(canvas, foreground) {
     lastPaint = -1
   }).observe(canvas)
 
-  const mod = (x, span) => ((x % span) + span) % span
-
-  function draw(time, backdrop) {
+  function draw(time, backdrop, shot) {
     const tick = Math.floor(time * 45)
-    if (!width || !height || (lastPaint === tick && lastSet === backdrop)) return
+    if (!width || !height || (lastPaint === tick && lastSet === backdrop && lastShot === shot)) return
     lastPaint = tick
     lastSet = backdrop
+    lastShot = shot
     ctx.clearRect(0, 0, width, height)
     const night = backdrop === 'night'
-    const ratio = Math.max(.66, height / 540)
-    for (const mote of motes) {
-      const x = mod(mote.x * width + time * (night ? -32 : 13 + mote.speed * 18) * ratio + Math.sin(mote.spin + time) * 12 + 40, width + 80) - 40
-      const y = mod(mote.y * height + time * (night ? 180 + mote.speed * 360 : 12 + mote.speed * 24) * ratio + 20, height + 40) - 20
-      if (mote.glint > .85) {
-        const radius = ratio * ((foreground ? 9 : 3) + mote.size * (foreground ? 18 : 9))
-        const halo = ctx.createRadialGradient(x, y, 0, x, y, radius)
-        halo.addColorStop(0, night ? '#f7afe579' : '#ffd3d875')
-        halo.addColorStop(.54, night ? '#b8c2ff3b' : '#ffbbc140')
-        halo.addColorStop(1, '#ffbdce00')
-        ctx.fillStyle = halo
-        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
-        continue
-      }
-      const scale = (foreground ? 3 + mote.size * 7 : 1 + mote.size * 4) * ratio
-      ctx.globalAlpha = night ? .17 + mote.size * .29 : .34 + mote.size * .42
-      ctx.beginPath()
+    const scale = Math.max(.58, height / 540)
+    const close = shot === 'close'
+    const warm = night ? rainGlow : duskGlow
+    const pink = night ? rainRose : duskRose
+
+    for (const [index, light] of lights.entries()) {
+      const x = width * (foreground ? (index % 2 ? .82 + light.x * .24 : light.x * .17) : light.x)
+      const y = height * (foreground ? .2 + light.y * .8 : (night ? .30 : .58) + light.y * .28)
+      const radius = scale * (foreground ? 19 + light.size * 48 : (close ? 6 : 2) + light.size * (close ? 30 : 12))
+      ctx.globalAlpha = (foreground ? .19 : .32) * (.8 + .2 * Math.sin(time * .7 + light.phase))
+      ctx.drawImage(index % 3 ? warm : pink, x - radius, y - radius, radius * 2, radius * 2)
+    }
+
+    for (const [index, mote] of weather.entries()) {
+      if (!night && index >= (foreground ? 10 : 25)) break
+      const spin = mote.spin + time * (mote.speed + .25)
+      const x = wrap(mote.x * width + time * (night ? -39 : 11 + mote.speed * 19) * scale + Math.sin(spin) * 16 + 48, width + 96) - 48
+      const y = wrap(mote.y * height + time * (night ? 200 + mote.speed * 260 : 15 + mote.speed * 20) * scale + 28, height + 56) - 28
+      const size = (foreground ? 3.6 + mote.size * 7 : 1.1 + mote.size * 3.5) * scale
       if (night) {
+        const length = size * 5 + 6
+        ctx.globalAlpha = (foreground ? .14 : .07) + mote.size * .19
+        ctx.beginPath()
         ctx.moveTo(x, y)
-        ctx.lineTo(x - scale * .43, y + scale * 4.1 + 7)
-        ctx.strokeStyle = '#d6cff9'
-        ctx.lineWidth = .7 + .45 * mote.size
+        ctx.lineTo(x - length * .162, y + length)
+        ctx.lineWidth = (foreground ? 1.25 : .8) * scale
+        ctx.strokeStyle = index % 4 === 0 ? '#edb7ce' : '#c0daff'
         ctx.stroke()
       } else {
-        const spin = mote.spin + time * (mote.speed + .25)
-        ctx.ellipse(x, y, scale, scale * (.25 + Math.abs(Math.sin(spin)) * .37), spin, 0, 2 * Math.PI)
-        ctx.fillStyle = mote.color
-        ctx.fill()
+        const flip = Math.sin(spin)
+        const center = x > width * .19 && x < width * .83 && y > height * .24 && y < height * .65
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(spin * .55 + index)
+        ctx.scale(size, size * (.21 + Math.abs(flip) * .66))
+        ctx.globalAlpha = (.27 + mote.size * .49) * (foreground && center ? .50 : 1)
+        ctx.fillStyle = flip > 0 ? '#ffd0c9' : '#cd759e'
+        ctx.fill(petal)
+        if (foreground && mote.size > .40) {
+          ctx.lineWidth = .06
+          ctx.strokeStyle = flip > 0 ? '#ffe2dd' : '#f29bb2'
+          ctx.stroke(vein)
+        }
+        ctx.restore()
       }
-      ctx.globalAlpha = 1
     }
+    ctx.globalAlpha = 1
   }
   return draw
 }
 
 export function makeParticles(stage) {
-  const background = layer(stage.querySelector('.rear'), false)
-  const foreground = layer(stage.querySelector('.fore'), true)
-  return (time, backdrop) => {
-    background(time, backdrop)
-    foreground(time, backdrop)
+  const rear = layer(stage.querySelector('.rear'), false)
+  const fore = layer(stage.querySelector('.fore'), true)
+  return (time, backdrop, shot) => {
+    rear(time, backdrop, shot)
+    fore(time, backdrop, shot)
   }
 }

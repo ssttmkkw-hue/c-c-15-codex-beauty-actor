@@ -2,9 +2,9 @@
 
 ## Art direction
 
-The story is set in the brief window between the last light and departure. A saturated peach horizon and lavender shadows frame the first look. Black plum and amber define 沈亦然, with a sharp shoulder line and warm reflected light. 林晚栀 has rose-violet eyes, warmer plum hair and a softer silhouette. Her pearl earring and silver star carry through wardrobe changes. The blue-hour rain set adds an alternate cool grade, glossy street reflections and drifting near-field rain.
+The story is set in the brief window between the last light and departure. A warm peach horizon sits between muted plum shadows and a low, soft glow. Black plum and amber define 沈亦然, with a sharp shoulder line and warm reflected light. 林晚栀 has rose-violet eyes, warmer plum hair and a softer silhouette. Her pearl earring and silver star carry through wardrobe changes. On the street, blue light from the open center meets pink storefront light at the edges of the cast. The signs, wet pavement and foreground rain carry the same palette.
 
-The two-shot leaves negative space between the two eyelines. The close-up softens the city and favors eyes and breath. The three-quarter composition shifts the portrait off center and shows the cut of the costume. Subtitle nameplates, Chinese serif type, and a secondary English line mimic an episode master while giving the portrait most of the frame.
+The two-shot leaves room between the faces and brings their shoulders together at the bottom of the frame. His painted sidelong glance meets her existing leftward gaze. Solo close-ups place the leads on opposite sides of the screen, with a softer city plate and concentrated bokeh below the eyeline. The off-axis portrait shows more costume. Chinese serif dialogue leads the captions, with a smaller English line and speaker name. The set and shot indicators sit below the image.
 
 ## Why layered 2D
 
@@ -14,16 +14,25 @@ For short, portrait-driven shots, a registered set of hand-directed original ill
 
 | Component | Implementation |
 | --- | --- |
-| Scene and cues | `src/scenes.js` carries script, cue-matched Pinyin, speaker, reaction, shot and gesture. The director composes these cues with wardrobe, chosen set and manual controls. |
-| Portrait rig | `src/rig.js` renders aligned WebP wardrobe plates, registered artwork for eyelids and expressions, custom SVG mouth paths, blush and tear layers, and gently moving illustrated foreground strands. Breathing and body sway are continuously sampled. Nod, tilt, and lean are short additive motions. |
-| Camera and lighting | CSS frames the actors around their eyes and shoulders. Set blur, screen-blended bloom, a foreground grade and a second wash for the rain scene create separation and soft light. The most detailed lines and highlights are baked into the original portraits. |
-| Particles | Two Canvas 2D layers straddle the cast. Seeded petal, rain and bokeh positions can be sampled at a fixed time for capture. Backing resolution is capped at 1.5×, and particle painting is capped at 45 updates per second. |
-| Dialogue | `public/voice/before-sunset.mp3` is an offline-rendered two-speaker track. `tools/prepare-voice.py` slices each cue into timed clauses and emits the 25 ms loudness envelope used with Pinyin mouth targets. The director samples media time while playing and uses elapsed time if playback fails. Seeking updates subtitles, gestures, and mouth pose together. |
-| Interface and QA | The director’s panel uses native controls and supports keyboard focus. Reduced motion suppresses ambient movement without disabling dialogue. `tools/shots.mjs` drives the production preview with the round’s capture hook and checks transport, controls, and responsive layout. |
+| Scene and cues | `src/scenes.js` carries the script, clause-matched Pinyin, cut, reaction, eyeline and gesture timing. Holds and gestures key off each cue’s audio time. |
+| Portrait rig | `src/rig.js` combines registered wardrobe plates with painted eyelids, smile and sadness patches, a sidelong gaze, translucent tears, soft blush and wind-tossed strands. Breathing and body sway run continuously. Nod, tilt and lean ease in and settle. |
+| Camera and lighting | CSS positions the actors and blurs the plate by shot size. A soft stage grade keeps the faces separate from the skyline. A color matrix and silhouette-masked sign light shift the same costume plates into the night palette. |
+| Particles | Two Canvas 2D layers carry slow, flipping petals, faster slanted rain and a separate field of defocused city lights. Seeded positions can be sampled at a fixed time for capture. Backing resolution is capped at 1.5×, and particle painting is capped at 45 updates per second. |
+| Dialogue | `public/voice/before-sunset.mp3` is the offline-rendered two-speaker track. `tools/prepare-voice.py` writes clause boundaries and the 25 ms loudness envelope. `src/speech.js` estimates syllable joins from local dips in that envelope and blends Pinyin mouth targets, including closures, round vowels and diphthongs. SVG paths render lips, mouth interior and highlights. Playback and seeking use media time, with elapsed time as a fallback. |
+| Interface and QA | The native control buttons include costume thumbnails and a return to the paused cue. Reduced motion suppresses ambient movement and keeps dialogue. `tools/shots.mjs` captures and verifies the production preview, including transport, face poses, controls and responsive layout. |
+
+## Round 2 artwork
+
+The new assets in `public/art/` are `male-eyes-partner.webp` and the `male` and `female` pairs of `eyes-smile`, `mouth-smile`, `eyes-sad`, and `mouth-sad` WebPs. The original close-ups provided the character references for the built-in OpenAI ImageGen tool. The working prompts asked for the same portrait scale, dusk rim, overlapping hair and costume, with three targeted changes.
+
+- **Smile, both leads.** Paint a private, close-lipped smile with one corner slightly higher, a gentle lift in the lower eyelid and a small brow release. Preserve the amber and violet irises, original skin tones and painted lip highlights.
+- **Sadness, both leads.** Raise the inner brows, lower the gaze and add a thin, naturally wet lower lash line. Keep the eye color, head pose and framing. The rig supplies the moving tear.
+- **Partner eyeline, male lead.** Keep both almond eyelids and the original amber iris details, and shift both pupils toward screen right, exposing more white on the screen-left side of each eye.
+
+The exported eye and mouth regions were aligned to a stable nose landmark, color-matched to the existing portraits, and feathered into the reference texture. The browser reads the registered WebPs directly.
 
 To regenerate the dialogue after changing the script, install `sherpa-onnx` and `numpy` into a Python environment, make FFmpeg available, and run `python tools/prepare-voice.py /path/to/vits-icefall-zh-aishell3` with the extracted model directory. The script writes the MP3 and the manifest together. [Model archive](https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-icefall-zh-aishell3.tar.bz2)
 
-## Next rounds
+## Round 3
 
-- **Round 2 · Acting.** Draw expressive mouth corners and closed-open transitions that share the same rendering as the portraits. Align Mandarin syllables to the rendered audio, annotate holds and eye darts, and add tested hand and shoulder poses for a few marked beats. Compare the same two emotional close-ups side by side.
-- **Round 3 · Cinematography.** Add reverse-angle art and closer eyeline continuity, refine the lighting match between actors and both sets, and polish the final edit. Run the full capture set on desktop and mobile. Compare performance on SwiftShader and hardware-accelerated devices if available.
+Add directional art for true reverse angles, develop a hand or shoulder insert for the ticket reveal, and polish the edit. The current speech alignment estimates boundaries within each recorded clause. Hand-marked phoneme timing and painted key mouth shapes would support closer cuts.
