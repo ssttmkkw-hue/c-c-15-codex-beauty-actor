@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#100d19">
+    <meta name="description" content="《等风的人》原创 AI 漫剧与角色演出实验。">
+    <title>等风的人 · 漫剧放映室</title>
+    <link rel="icon" href="./art/aperture.svg" type="image/svg+xml">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./"><span class="brand-mark" data-icon="aperture"></span><span>漫剧放映室<small>MANHUA STUDIO</small></span></a>
+        <nav aria-label="视图">
+          <button class="nav-button active" data-view="studio" aria-pressed="true">放映室</button>
+          <button class="nav-button" data-view="script" aria-pressed="false">场景剧本</button>
+        </nav>
+        <button class="sound-button" id="sound" aria-pressed="true"><span data-icon="sound"></span><span>原声</span></button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <header class="page-heading">
+        <div>
+          <p class="eyebrow"><span></span> ORIGINAL MANHUA <i></i> EP.01</p>
+          <h1>等风的人</h1>
+          <p class="logline">离开的前一天，她在天台等到了想告别的人。</p>
+        </div>
+        <button class="primary" id="premiere"><span data-icon="play"></span><span>播放短剧</span></button>
+      </header>
+
+      <div class="production-grid">
+        <section class="screen-section" aria-label="放映画面">
+          <div class="player" id="player">
+            <div class="stage" id="stage" data-backdrop="roof" data-shot="pair">
+              <div class="plate" aria-hidden="true"></div>
+              <div class="bloom" aria-hidden="true"></div>
+              <canvas class="particles rear" aria-hidden="true"></canvas>
+              <div class="cast" aria-hidden="true"></div>
+              <canvas class="particles fore" aria-hidden="true"></canvas>
+              <div class="grade" aria-hidden="true"></div>
+              <div class="frame-lines" aria-hidden="true"></div>
+              <div class="scene-slate"><span class="slate-dot"></span><span id="location">樱落天台</span></div>
+              <span class="shot-slate" id="shot-slate">双人镜头</span>
+              <div class="subtitles" id="subtitles" aria-live="polite" aria-atomic="true">
+                <div class="speaker"><span></span><b id="speaker">沈亦然</b><span></span></div>
+                <div class="subtitle-zh" id="subtitle-zh">你说等风，是在等我吗？</div>
+                <div class="subtitle-en" id="subtitle-en" lang="en">When you said you were waiting for the wind, did you mean me?</div>
+              </div>
+            </div>
+            <div class="transport">
+              <button class="icon-button" id="play" title="播放" aria-label="播放"><span data-icon="play"></span></button>
+              <button class="icon-button" id="restart" title="从头播放" aria-label="从头播放"><span data-icon="restart"></span></button>
+              <label class="sr-only" for="seek">短剧进度</label>
+              <input id="seek" class="seek" type="range" min="0" max="1" step="0.01" value="0">
+              <output class="time" id="time" for="seek">0:00 / 0:00</output>
+              <button class="icon-button" id="subtitles-toggle" title="字幕" aria-label="字幕" aria-pressed="true"><span data-icon="captions"></span></button>
+              <button class="icon-button" id="fullscreen" title="全屏" aria-label="全屏"><span data-icon="expand"></span></button>
+            </div>
+          </div>
+          <div class="screen-notes">
+            <div><span class="note-line"></span> 第一幕 <span class="note-divider"></span> <span>日落之前</span></div>
+            <span id="screen-state">场景预览</span>
+          </div>
+        </section>
+
+        <aside class="inspector" aria-label="演出控制台">
+          <section id="studio-view">
+            <header class="inspector-heading"><span class="inspector-icon" data-icon="sliders"></span><div><h2>演出控制台</h2><p>DIRECTOR’S PANEL</p></div></header>
+            <div id="director-controls"></div>
+          </section>
+          <section id="script-view" hidden>
+            <header class="inspector-heading"><span class="inspector-icon" data-icon="script"></span><div><h2>场景剧本</h2><p>BEFORE THE SUN SETS</p></div></header>
+            <ol class="script-lines" id="script-lines"></ol>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

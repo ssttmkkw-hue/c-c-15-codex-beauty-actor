@@ -1,0 +1,189 @@
+{
+  "duration": 22.7918,
+  "step": 0.025,
+  "lines": [
+    {
+      "start": 0,
+      "clauses": [
+        [
+          0.32,
+          1.4015,
+          [
+            "ni",
+            "shuo",
+            "deng",
+            "feng"
+          ]
+        ],
+        [
+          1.5715,
+          2.8043,
+          [
+            "shi",
+            "zai",
+            "deng",
+            "wo",
+            "ma"
+          ]
+        ]
+      ],
+      "envelope": "00000000000003cffffecca6664ffffffb769eb7527eefea975223100000000034544debafffffeb8434bbadeeeddaaaabbbceeeb8553321000000000000000000000"
+    },
+    {
+      "start": 3.3243,
+      "clauses": [
+        [
+          0.19,
+          1.6142,
+          [
+            "wo",
+            "ming",
+            "tian",
+            "jiu",
+            "zou",
+            "le"
+          ]
+        ],
+        [
+          1.8842,
+          3.0629,
+          [
+            "ni",
+            "zen",
+            "me",
+            "cai",
+            "lai"
+          ]
+        ]
+      ],
+      "envelope": "000000006eeeeefedddddfe4428ffffffa6bfffffb633bbba9888888875421100000000000008ffffa652dfddddca4443339aaa9abbaaaa988642111100000000000000000000000"
+    },
+    {
+      "start": 6.9071,
+      "clauses": [
+        [
+          0.19,
+          1.5702,
+          [
+            "wo",
+            "zhao",
+            "le",
+            "yi",
+            "lu",
+            "jie",
+            "kou"
+          ]
+        ],
+        [
+          1.8402,
+          2.515,
+          [
+            "zui",
+            "hou"
+          ]
+        ],
+        [
+          2.685,
+          4.2309,
+          [
+            "zhi",
+            "sheng",
+            "yi",
+            "ju",
+            "xiang",
+            "jian",
+            "ni"
+          ]
+        ]
+      ],
+      "envelope": "000000007effffd8fffffddccbba889abcceecdc9443adfffd8564489655110000000000008ffffc996744cecaba775320000000000022bddc7675ffddffffcc8758fcfdd8555eeba9a74aeeedfebabbb756321210000000000000000000000"
+    },
+    {
+      "start": 11.658,
+      "clauses": [
+        [
+          0.19,
+          1.4844,
+          [
+            "na",
+            "wo",
+            "zou",
+            "le",
+            "yi",
+            "hou"
+          ]
+        ],
+        [
+          1.6544,
+          3.0689,
+          [
+            "ni",
+            "hai",
+            "hui",
+            "lai",
+            "zhe",
+            "li",
+            "ma"
+          ]
+        ]
+      ],
+      "envelope": "000000006ffffffffffe8432dfedcdabaabdccca7533344332456744310000000009eea45acdccb22bfffffffddd9322cffffedddcabbabcbba95431000000000000000000000000"
+    },
+    {
+      "start": 15.2469,
+      "clauses": [
+        [
+          0.19,
+          0.8689,
+          [
+            "bu",
+            "hui"
+          ]
+        ],
+        [
+          1.1389,
+          3.4907,
+          [
+            "wo",
+            "mai",
+            "le",
+            "he",
+            "ni",
+            "tong",
+            "yi",
+            "ban",
+            "de",
+            "che",
+            "piao"
+          ]
+        ]
+      ],
+      "envelope": "000000006fffffeeefdceeeedab86321100000000000007dfffffedeffffbacbaaa963543fccddcffcb843433acbceeecceda84dfffeebdb9b84336bcdca744cefdc98323200000000000000000000000"
+    },
+    {
+      "start": 19.2576,
+      "clauses": [
+        [
+          0.19,
+          1.1923,
+          [
+            "na",
+            "ming",
+            "tian"
+          ]
+        ],
+        [
+          1.3622,
+          2.4141,
+          [
+            "huan",
+            "ni",
+            "deng",
+            "wo"
+          ]
+        ]
+      ],
+      "envelope": "000000006eefffefffddb7873222211112dedeedcb64310000000001efffffffffdddc745cbabaccdcccccbaa77532110000000000000000000000000000000000000000000000"
+    }
+  ]
+}
